@@ -83,10 +83,13 @@ Submit a pull request.
 Donate to the Project
 If you appreciate the work and would like to support the development of this project, consider making a donation.
 
-Cryptocurrency Donations
+Cryptocurrency Donations:
+```
 Bitcoin Address: 3826jB3kQiq3mKRni3MkR6hRXEKBqRqCLR
+```
+```
 Ethereum Address: 0xf53FD060Ae80623507689501598fE53A05E078A9
-
+```
 Your support will help improve and expand the project, making it better for everyone in the community.
 
 License
