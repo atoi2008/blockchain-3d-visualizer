@@ -95,8 +95,8 @@ make
 ## File Overview
 
 - **main.cpp**: The main entry point, handling initialization of both the CPU mining engine and the Vulkan renderer.
-- **mining/mining.cpp**: Manages CPU mining processes using the RandomX algorithm.
-- **vulkan/vulkan_renderer.cpp**: Sets up Vulkan and renders the real-time 3D environment.
+- **mining/RandomXMiner.cpp**: Manages CPU mining processes using the RandomX algorithm.
+- **vulkan/VulkanRenderer.cpp**: Sets up Vulkan and renders the real-time 3D environment.
 - **shaders/vertex_shader.vert** & **fragment_shader.frag**: GLSL shaders for 3D rendering.
 
 ## Contributing
