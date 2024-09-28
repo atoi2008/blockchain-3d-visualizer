@@ -1,3 +1,4 @@
+
 # Blockchain 3D Visualizer
 
 A C++ project that integrates **CPU mining** using the **RandomX** algorithm with **Vulkan** for real-time 3D visualization of the mining process. This project aims to create a procedural 3D environment that dynamically visualizes data from mining activities without relying on GPU-based computations for the mining algorithm.
@@ -19,81 +20,108 @@ blockchain-3d-visualizer/
 └── docs/                     # Documentation (project guides, API docs)
 ```
 
-#Features
-CPU Mining: Utilizes the RandomX algorithm for mining, executed on the CPU for efficiency and accessibility.
-Vulkan Visualization: Renders real-time 3D environments reflecting mining data.
-Cross-Platform: Designed to run on multiple operating systems (Windows, Linux, macOS) with appropriate CPU support.
-Procedural Graphics: Visualizes data such as hash rate, nonce attempts, and block progress using dynamic 3D models and particle effects.
+## Features
 
-#Dependencies
-Vulkan SDK (Required for 3D rendering)
-GLFW (For windowing and input handling)
-GLM (For 3D math operations)
+- **CPU Mining**: Utilizes the RandomX algorithm for mining, executed on the CPU for efficiency and accessibility.
+- **Vulkan Visualization**: Renders real-time 3D environments reflecting mining data.
+- **Cross-Platform**: Designed to run on multiple operating systems (Windows, Linux, macOS) with appropriate CPU support.
+- **Procedural Graphics**: Visualizes data such as hash rate, nonce attempts, and block progress using dynamic 3D models and particle effects.
 
-#Getting Started
-Prerequisites
-CMake: Install CMake for building the project.
+## Dependencies
 
-Install CMake from https://cmake.org/download/
-Vulkan SDK: Install Vulkan SDK from Vulkan SDK Website.
+- **Vulkan SDK**: (Required for 3D rendering)
+- **GLFW**: (For windowing and input handling)
+- **GLM**: (For 3D math operations)
 
-GLFW: Install GLFW for window creation and input handling.
+## Getting Started
 
-On Linux (via apt): `sudo apt-get install libglfw3-dev`
-On macOS (via Homebrew): 1brew install glfw1
-GLM: A header-only math library.
+### Prerequisites
 
-#Building the Project
+- **CMake**: Install CMake for building the project from [CMake Download](https://cmake.org/download/).
+  
+- **Vulkan SDK**: Install Vulkan SDK from [Vulkan SDK Website](https://vulkan.lunarg.com/sdk/home).
+  
+- **GLFW**: Install GLFW for window creation and input handling.
+  - On Linux (via apt): 
+    ```bash
+    sudo apt-get install libglfw3-dev
+    ```
+  - On macOS (via Homebrew): 
+    ```bash
+    brew install glfw
+    ```
+
+- **GLM**: A header-only math library.
+
+## Building the Project
+
 To build and run the project, follow these steps:
 
-# Clone the repository
-`git clone https://github.com/your-username/blockchain-3d-visualizer.git`
-`cd blockchain-3d-visualizer`
+### Clone the repository
 
-# Create a build directory
-`mkdir build && cd build`
-
-# Configure the build system using CMake
-`cmake ..`
-
-# Build the project
-`make`
-
-# Run the executable
-`./blockchain-3d-visualizer`
-
-```
-File Overview
-main.cpp: The main entry point, handling initialization of both the CPU mining engine and the Vulkan renderer.
-mining/mining.cpp: Manages CPU mining processes using the RandomX algorithm.
-vulkan/vulkan_renderer.cpp: Sets up Vulkan and renders the real-time 3D environment.
-shaders/vertex_shader.vert & fragment_shader.frag: GLSL shaders for 3D rendering.
+```bash
+git clone https://github.com/your-username/blockchain-3d-visualizer.git
+cd blockchain-3d-visualizer
 ```
 
-#Contributing
+### Create a build directory
+
+```bash
+mkdir build && cd build
+```
+
+### Configure the build system using CMake
+
+```bash
+cmake ..
+```
+
+### Build the project
+
+```bash
+make
+```
+
+### Run the executable
+
+```bash
+./blockchain-3d-visualizer
+```
+
+## File Overview
+
+- **main.cpp**: The main entry point, handling initialization of both the CPU mining engine and the Vulkan renderer.
+- **mining/mining.cpp**: Manages CPU mining processes using the RandomX algorithm.
+- **vulkan/vulkan_renderer.cpp**: Sets up Vulkan and renders the real-time 3D environment.
+- **shaders/vertex_shader.vert** & **fragment_shader.frag**: GLSL shaders for 3D rendering.
+
+## Contributing
+
 Feel free to contribute to this project by:
-```
-Reporting bugs or issues.
-Suggesting features or improvements.
-Submitting pull requests for code contributions.
-Contribution Workflow:
-Fork the repository.
-Create a new branch (git checkout -b feature-branch).
-Make your changes.
-Commit and push your changes (git push origin feature-branch).
-Submit a pull request.
-Donate to the Project
-```
+
+- Reporting bugs or issues.
+- Suggesting features or improvements.
+- Submitting pull requests for code contributions.
+
+### Contribution Workflow
+
+1. Fork the repository.
+2. Create a new branch (`git checkout -b feature-branch`).
+3. Make your changes.
+4. Commit and push your changes (`git push origin feature-branch`).
+5. Submit a pull request.
+
+## Donate to the Project
+
 If you appreciate the work and would like to support the development of this project, please consider making a donation.
 
-Cryptocurrency Donations:
-```
-Bitcoin Address: 3826jB3kQiq3mKRni3MkR6hRXEKBqRqCLR
-```
-```
-Ethereum Address: 0xf53FD060Ae80623507689501598fE53A05E078A9
-```
+### Cryptocurrency Donations
+
+- **Bitcoin Address**: `3826jB3kQiq3mKRni3MkR6hRXEKBqRqCLR`
+- **Ethereum Address**: `0xf53FD060Ae80623507689501598fE53A05E078A9`
+
 Your support will help improve and expand the project, making it better for everyone in the community.
 
-License
+## License
+
 This project is licensed under the MIT License - see the LICENSE file for details.
