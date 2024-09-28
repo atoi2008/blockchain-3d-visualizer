@@ -19,17 +19,18 @@ blockchain-3d-visualizer/
 └── docs/                     # Documentation (project guides, API docs)
 ```
 
-Features
+#Features
 CPU Mining: Utilizes the RandomX algorithm for mining, executed on the CPU for efficiency and accessibility.
 Vulkan Visualization: Renders real-time 3D environments reflecting mining data.
 Cross-Platform: Designed to run on multiple operating systems (Windows, Linux, macOS) with appropriate CPU support.
 Procedural Graphics: Visualizes data such as hash rate, nonce attempts, and block progress using dynamic 3D models and particle effects.
 
-Dependencies
+#Dependencies
 Vulkan SDK (Required for 3D rendering)
 GLFW (For windowing and input handling)
 GLM (For 3D math operations)
-Getting Started
+
+#Getting Started
 Prerequisites
 CMake: Install CMake for building the project.
 
@@ -42,7 +43,7 @@ On Linux (via apt): `sudo apt-get install libglfw3-dev`
 On macOS (via Homebrew): 1brew install glfw1
 GLM: A header-only math library.
 
-Building the Project
+#Building the Project
 To build and run the project, follow these steps:
 
 # Clone the repository
@@ -69,9 +70,9 @@ vulkan/vulkan_renderer.cpp: Sets up Vulkan and renders the real-time 3D environm
 shaders/vertex_shader.vert & fragment_shader.frag: GLSL shaders for 3D rendering.
 ```
 
-Contributing
+#Contributing
 Feel free to contribute to this project by:
-
+```
 Reporting bugs or issues.
 Suggesting features or improvements.
 Submitting pull requests for code contributions.
@@ -82,7 +83,8 @@ Make your changes.
 Commit and push your changes (git push origin feature-branch).
 Submit a pull request.
 Donate to the Project
-If you appreciate the work and would like to support the development of this project, consider making a donation.
+```
+If you appreciate the work and would like to support the development of this project, please consider making a donation.
 
 Cryptocurrency Donations:
 ```
