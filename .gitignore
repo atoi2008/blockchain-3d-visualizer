@@ -1,0 +1,28 @@
+# Ignore the .vscode directory except for specific files
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+
+# Ignore local history for Visual Studio Code
+.history/
+
+# Ignore built Visual Studio Code extensions
+*.vsix
+
+# Ignore node_modules directory (if using Node.js)
+node_modules/
+
+# Ignore log files
+*.log
+
+# Ignore environment variable files
+.env
+
+# Ignore build directory
+build/
+
+# Ignore .git directory
+.git/
