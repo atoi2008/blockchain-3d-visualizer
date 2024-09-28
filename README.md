@@ -7,16 +7,20 @@ A C++ project that integrates **CPU mining** using the **RandomX** algorithm wit
 
 ```bash
 blockchain-3d-visualizer/
-├── CMakeLists.txt            # CMake build configuration
+├── CMakeLists.txt            # CMake build configuration (in progress)
 ├── README.md                 # Project documentation
 ├── src/                      # C++ source files
-│   ├── main.cpp              # Main entry point
-│   ├── mining/               # Mining-related code (CPU implementation)
-│   ├── vulkan/               # Vulkan 3D visualization engine
-│   └── utils/                # Helper functions and utilities
+│   ├── main.cpp              # Main entry point (created)
+│   ├── mining/               # Mining-related code (in progress)
+│   ├── vulkan/               # Vulkan 3D visualization engine (in progress)
+│   └── utils/                # Helper functions and utilities (to be implemented)
 ├── include/                  # Header files
-├── shaders/                  # Vulkan shaders (vertex and fragment)
-├── assets/                   # (Optional) Assets such as textures/models
+├── shaders/                  # Vulkan shaders (vertex and fragment, created)
+│   ├── vertex_shader.glsl
+│   ├── fragment_shader.glsl
+│   ├── vertex_shader.spv     # Compiled vertex shader
+│   └── fragment_shader.spv   # Compiled fragment shader
+├── assets/                   # Assets such as textures/models (to be added)
 └── docs/                     # Documentation (project guides, API docs)
 ```
 
