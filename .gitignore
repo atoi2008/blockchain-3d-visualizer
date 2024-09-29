@@ -26,3 +26,12 @@ build/
 
 # Ignore .git directory
 .git/
+
+# Visual Studio solution files
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+
+# vcpkg directory
+vcpkg/

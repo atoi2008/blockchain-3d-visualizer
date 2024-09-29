@@ -19,7 +19,7 @@ endif()
 
 # Find Vulkan and GLFW
 find_package(Vulkan REQUIRED)
-find_package(glfw3 3.3 REQUIRED)
+find_package(glfw3 CONFIG REQUIRED)
 
 # Include directories
 include_directories(${Vulkan_INCLUDE_DIRS})
