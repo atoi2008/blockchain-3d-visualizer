@@ -3,18 +3,25 @@
 #include <stdexcept>
 #include <iostream>
 
+VulkanRenderer::VulkanRenderer(GLFWwindow* win) : window(win) {} // Initialize window in constructor
+
 void VulkanRenderer::init() {
     createInstance();
+    // Create surface
+    // You need to pass your GLFW window to create the surface
+    if (glfwCreateWindowSurface(instance, getWindow(), nullptr, &surface) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create window surface!");
+    }
     createSwapchain();
     createImageViews();
     createCommandBuffer(); // Call to create command buffer
-    // Additional Vulkan setup can be done here
 }
 
 void VulkanRenderer::cleanup() {
     cleanupSwapchain();
     vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer); // Free the command buffer
     vkDestroyCommandPool(device, commandPool, nullptr); // Destroy command pool
+    vkDestroySurfaceKHR(instance, surface, nullptr); // Destroy surface
     vkDestroyDevice(device, nullptr);
     vkDestroyInstance(instance, nullptr);
     glfwDestroyWindow(window);
@@ -22,7 +29,7 @@ void VulkanRenderer::cleanup() {
 }
 
 bool VulkanRenderer::isRunning() {
-    return !glfwWindowShouldClose(window);  // Check if the window is still open
+    return !glfwWindowShouldClose(window);
 }
 
 void VulkanRenderer::recreateSwapchain() {
@@ -38,13 +45,34 @@ void VulkanRenderer::setFramebufferResizedFlag(bool resized) {
 }
 
 GLFWwindow* VulkanRenderer::getWindow() {
-    return window;
+    return window; // Ensure you have the window initialized
 }
 
 void VulkanRenderer::createInstance() {
+    // Create Vulkan instance
     VkInstanceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    createInfo.pApplicationInfo = nullptr; // Add your application info if needed
+
+    // Additional app info
+    VkApplicationInfo appInfo{};
+    appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+    appInfo.pApplicationName = "Blockchain 3D Visualizer";
+    appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+    appInfo.pEngineName = "No Engine";
+    appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
+    appInfo.apiVersion = VK_API_VERSION_1_0;
+
+    createInfo.pApplicationInfo = &appInfo;
+
+    // Check for validation layers
+    if (!checkValidationLayerSupport()) {
+        throw std::runtime_error("Validation layers requested, but not available!");
+    }
+
+    // Set validation layers
+    const std::vector<const char*> validationLayers = {"VK_LAYER_KHRONOS_validation"};
+    createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+    createInfo.ppEnabledLayerNames = validationLayers.data();
 
     if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
         throw std::runtime_error("Failed to create Vulkan instance!");
@@ -52,6 +80,7 @@ void VulkanRenderer::createInstance() {
 }
 
 void VulkanRenderer::createSwapchain() {
+    // Create swapchain logic
     VkSwapchainCreateInfoKHR createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     createInfo.surface = surface; // Set this to your created Vulkan surface
@@ -97,6 +126,7 @@ void VulkanRenderer::createCommandBuffer() {
 }
 
 void VulkanRenderer::render() {
+    // Begin rendering command buffer
     VkResult result = vkBeginCommandBuffer(commandBuffer, nullptr);
     if (result != VK_SUCCESS) {
         throw std::runtime_error("Failed to begin recording command buffer!");
@@ -104,11 +134,13 @@ void VulkanRenderer::render() {
 
     // Specify rendering operations here (e.g., vkCmdBindPipeline(), vkCmdDraw(), etc.)
 
+    // End recording command buffer
     result = vkEndCommandBuffer(commandBuffer);
     if (result != VK_SUCCESS) {
         throw std::runtime_error("Failed to record command buffer!");
     }
 
+    // Submit command buffer to the graphics queue
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submitInfo.commandBufferCount = 1;
@@ -118,6 +150,7 @@ void VulkanRenderer::render() {
         throw std::runtime_error("Failed to submit draw command buffer!");
     }
 
+    // Present the swapchain image
     VkPresentInfoKHR presentInfo{};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     presentInfo.swapchainCount = 1;
@@ -125,4 +158,9 @@ void VulkanRenderer::render() {
     presentInfo.pImageIndices = &imageIndex; // Replace with your current image index
 
     vkQueuePresentKHR(graphicsQueue, &presentInfo);
+}
+
+bool VulkanRenderer::checkValidationLayerSupport() {
+    // Check for validation layer support
+    // This function needs to be implemented
 }

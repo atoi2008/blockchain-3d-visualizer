@@ -8,34 +8,36 @@
 
 class VulkanRenderer {
 public:
+VulkanRenderer(GLFWwindow* win); // Constructor
     void init();
     void cleanup();
     void render();
     void recreateSwapchain();
     void setFramebufferResizedFlag(bool resized);
+    bool isRunning();
     GLFWwindow* getWindow();
-    bool isRunning();  // Ensure this is declared here
 
 private:
     void createInstance();
     void createSwapchain();
     void createImageViews();
-    void cleanupSwapchain();
     void createCommandBuffer();
-    
+    void cleanupSwapchain();
+    bool checkValidationLayerSupport();
+
+    // Vulkan members
+    GLFWwindow* window; // Declare window
     VkInstance instance;
     VkDevice device;
-    VkSwapchainKHR swapchain;
     VkCommandPool commandPool;
     VkCommandBuffer commandBuffer;
-    GLFWwindow* window;
-    VkQueue graphicsQueue;
-    VkSurfaceKHR surface; // Vulkan surface for rendering
-    uint32_t graphicsQueueFamilyIndex; // Queue family index
-    uint32_t imageIndex; // Current image index to be presented
-
-    bool framebufferResized = false;
+    VkSwapchainKHR swapchain;
+    VkSurfaceKHR surface; // Declare surface
     std::vector<VkImageView> swapchainImageViews;
+    uint32_t imageIndex; // Declare imageIndex
+    int graphicsQueueFamilyIndex; // Assume this is set correctly
+    VkQueue graphicsQueue; // Declare graphicsQueue
+    bool framebufferResized = false;
 };
 
 #endif // VULKAN_RENDERER_H

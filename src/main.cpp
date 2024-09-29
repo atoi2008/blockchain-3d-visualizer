@@ -2,6 +2,7 @@
 #include <iostream>
 #include <thread>
 #include <atomic>
+#include <GLFW/glfw3.h> // Include GLFW for window handling
 #include "vulkan/VulkanRenderer.h"  
 #include "mining/RandomXMiner.h"           
 
@@ -43,13 +44,21 @@ int main() {
 
     // Set GLFW window hints for Vulkan
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+
+    // Create the GLFW window
+    GLFWwindow* window = glfwCreateWindow(800, 600, "Blockchain 3D Visualizer", nullptr, nullptr);
+    if (!window) {
+        glfwTerminate();
+        return -1;
+    }
+
     // Initialize Vulkan renderer
-    VulkanRenderer renderer;
+    VulkanRenderer renderer(window); // Pass the window to the VulkanRenderer constructor
     renderer.init();
 
     // Set user pointer for the window callback
-    glfwSetWindowUserPointer(renderer.getWindow(), &renderer);
-    glfwSetFramebufferSizeCallback(renderer.getWindow(), framebufferResizeCallback);
+    glfwSetWindowUserPointer(window, &renderer);
+    glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
 
     // Start the mining thread
     std::thread miningThread(startMining);
@@ -78,6 +87,9 @@ int main() {
 
     // Clean up Vulkan resources
     renderer.cleanup();
+
+    glfwDestroyWindow(window); // Clean up the window
+    glfwTerminate(); // Clean up GLFW
 
     return 0;
 }
