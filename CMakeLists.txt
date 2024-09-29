@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # Add the source directory
-add_subdirectory(src/) 
+add_subdirectory(libs/randomx) 
 
 # Find Vulkan
 find_package(Vulkan REQUIRED)
@@ -18,7 +18,7 @@ find_package(glfw3 REQUIRED)
 
 # Include directories
 include_directories(${Vulkan_INCLUDE_DIRS})
-#include_directories(${CMAKE_SOURCE_DIR}/src/crypto/randomx)  # Include randomx headers
+include_directories(${CMAKE_SOURCE_DIR}/libs/randomx/src)  # Include randomx headers
 include_directories(/usr/include/GLFW)  #TODO: Update path as needed
 include_directories(/usr/include/glm)   #TODO: Update path as needed
 
