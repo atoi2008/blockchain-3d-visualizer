@@ -7,20 +7,21 @@ A C++ project that integrates **CPU mining** using the **RandomX** algorithm wit
 
 ```bash
 blockchain-3d-visualizer/
-├── CMakeLists.txt            # CMake build configuration (in progress)
+├── CMakeLists.txt            # CMake build configuration
 ├── README.md                 # Project documentation
 ├── src/                      # C++ source files
-│   ├── main.cpp              # Main entry point (created)
-│   ├── mining/               # Mining-related code (in progress)
-│   ├── vulkan/               # Vulkan 3D visualization engine (in progress)
-│   └── utils/                # Helper functions and utilities (to be implemented)
-├── include/                  # Header files
-├── shaders/                  # Vulkan shaders (vertex and fragment, created)
-│   ├── vertex_shader.glsl
-│   ├── fragment_shader.glsl
-│   ├── vertex_shader.spv     # Compiled vertex shader
-│   └── fragment_shader.spv   # Compiled fragment shader
-├── assets/                   # Assets such as textures/models (to be added)
+│   ├── main.cpp              # Main entry point
+│   ├── mining/               # Mining-related code (CPU implementation)
+│   │   ├── RandomXMiner.h    # Header file for RandomX mining
+│   │   └── RandomXMiner.cpp  # Implementation of the mining engine
+│   ├── vulkan/               # Vulkan 3D visualization engine
+│   │   ├── VulkanRenderer.h  # Vulkan renderer header
+│   │   └── VulkanRenderer.cpp# Vulkan renderer implementation
+│   └── utils/                # Helper functions and utilities (if needed)
+├── include/                  # Header files (might be combined with src in small projects)
+├── shaders/                  # Vulkan shaders (vertex and fragment)
+│   ├── vertex_shader.vert    # Vertex shader in GLSL
+│   └── fragment_shader.frag  # Fragment shader in GLSL
 └── docs/                     # Documentation (project guides, API docs)
 ```
 
