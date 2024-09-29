@@ -1,28 +1,21 @@
-// RandomXMiner.h
 #ifndef RANDOMX_MINER_H
 #define RANDOMX_MINER_H
 
-#include <cstddef>
-#include <cstdint>
-#include <stdexcept>
-#include <vector>
-#include "randomx.h" // Ensure you include the correct path
-#include "intrin_portable.h" // Assuming this is in the same folder structure
+#include "randomx.h"
 
 class RandomXMiner {
 public:
     RandomXMiner();
     ~RandomXMiner();
 
+    void initialize(const uint8_t* key, size_t key_size);
     void mine();
+    void stopMining();
 
 private:
-    randomx_cache* cache;
     randomx_vm* vm;
     randomx_dataset* dataset;
-
-    void initialize();
-    void cleanup();
+    bool mining_active;
 };
 
 #endif // RANDOMX_MINER_H
