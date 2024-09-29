@@ -65,7 +65,7 @@ To build and run the project, follow these steps:
 ### Clone the repository
 
 ```bash
-git clone https://github.com/your-username/blockchain-3d-visualizer.git
+git clone https://github.com/atoi2008/blockchain-3d-visualizer.git
 cd blockchain-3d-visualizer
 ```
 
