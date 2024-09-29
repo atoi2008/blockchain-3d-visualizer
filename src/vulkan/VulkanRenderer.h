@@ -1,34 +1,39 @@
 // VulkanRenderer.h
-#pragma once
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
+#ifndef VULKANRENDERER_H
+#define VULKANRENDERER_H
+
 #include <vulkan/vulkan.h>
+#include <GLFW/glfw3.h>
 #include <vector>
 
 class VulkanRenderer {
 public:
-    VulkanRenderer();
-    void init();  // Initialize Vulkan
-    void render();  // Render the 3D environment
-    void cleanup();  // Cleanup Vulkan resources
-    void recreateSwapchain();  // Recreate swapchain on window resize
-    bool isRunning();  // Check if the window is still open
-    void setFramebufferResizedFlag(bool resized);  // Handle window resize flag
-    GLFWwindow* getWindow();  // Get GLFW window handle
+    void init();
+    void render();
+    void cleanup();
+    bool isRunning();
+    void recreateSwapchain();
+    void setFramebufferResizedFlag(bool resized);
+    GLFWwindow* getWindow();
 
 private:
+    // Vulkan components
+    VkInstance instance;
+    VkDevice device;
+    VkSwapchainKHR swapChain;
+    std::vector<VkImageView> swapChainImageViews;
+    std::vector<VkFramebuffer> swapChainFramebuffers;
+
+    // Window and framebuffer
+    GLFWwindow* window;
+    bool framebufferResized = false;
+
+    // Functions
     void createInstance();
     void createSwapchain();
     void createImageViews();
     void createFramebuffers();
-    void createCommandBuffers();
     void cleanupSwapchain();
-
-    GLFWwindow* window;
-    VkInstance instance;
-    VkSwapchainKHR swapChain;
-    std::vector<VkFramebuffer> swapChainFramebuffers;
-    std::vector<VkImageView> swapChainImageViews;
-    VkDevice device;
-    bool framebufferResized;
 };
+
+#endif // VULKANRENDERER_H
