@@ -1,27 +1,31 @@
 // VulkanRenderer.cpp
 #include "VulkanRenderer.h"
 #include <iostream>
+#include <stdexcept>
 
-VulkanRenderer::VulkanRenderer() : framebufferResized(false) {}
+VulkanRenderer::VulkanRenderer() 
+    : framebufferResized(false), window(nullptr), device(VK_NULL_HANDLE), swapChain(VK_NULL_HANDLE) {}
 
 void VulkanRenderer::init() {
-    // Initialize Vulkan (setup instance, device, swapchain, etc.)
-    createInstance();
-    createSwapchain();
-    createImageViews();
-    createFramebuffers();
-    createCommandBuffers();
-    std::cout << "Vulkan renderer initialized." << std::endl;
+    try {
+        createInstance();
+        createDevice(); // Make sure to add device creation here
+        createSwapchain();
+        createImageViews();
+        createFramebuffers();
+        createCommandBuffers();
+        std::cout << "Vulkan renderer initialized." << std::endl;
+    } catch (const std::runtime_error& e) {
+        std::cerr << "Failed to initialize Vulkan renderer: " << e.what() << std::endl;
+        throw; // Rethrow to let main handle the cleanup
+    }
 }
 
 void VulkanRenderer::recreateSwapchain() {
-    // Wait for the device to be idle before modifying Vulkan resources
-    vkDeviceWaitIdle(device);
-
-    // Destroy old swapchain-related resources
+    vkDeviceWaitIdle(device); // Ensure the device is idle before making changes
     cleanupSwapchain();
 
-    // Create a new swapchain with updated dimensions
+    // Create a new swapchain and related resources
     createSwapchain();
     createImageViews();
     createFramebuffers();
@@ -29,7 +33,7 @@ void VulkanRenderer::recreateSwapchain() {
 }
 
 void VulkanRenderer::cleanupSwapchain() {
-    // Destroy framebuffers, image views, etc.
+    // Clean up swapchain-related resources
     for (auto framebuffer : swapChainFramebuffers) {
         vkDestroyFramebuffer(device, framebuffer, nullptr);
     }
@@ -38,8 +42,9 @@ void VulkanRenderer::cleanupSwapchain() {
         vkDestroyImageView(device, imageView, nullptr);
     }
 
-    // Destroy the swapchain itself
-    vkDestroySwapchainKHR(device, swapChain, nullptr);
+    if (swapChain != VK_NULL_HANDLE) {
+        vkDestroySwapchainKHR(device, swapChain, nullptr);
+    }
 }
 
 void VulkanRenderer::setFramebufferResizedFlag(bool resized) {
@@ -55,12 +60,20 @@ bool VulkanRenderer::isRunning() {
 }
 
 void VulkanRenderer::render() {
-    // Example render function (replace with actual rendering code)
+    // Placeholder for rendering code
     std::cout << "Rendering frame..." << std::endl;
+
+    // Example of waiting on the swap chain and rendering (this needs to be expanded)
+    // vkWaitForFences(...);
+    // vkAcquireNextImageKHR(...);
+    // vkQueueSubmit(...);
 }
 
 void VulkanRenderer::cleanup() {
-    // Cleanup Vulkan resources (swapchain, instance, etc.)
     cleanupSwapchain();
+    if (device != VK_NULL_HANDLE) {
+        vkDestroyDevice(device, nullptr);
+    }
+    // Additional cleanup, such as destroying the instance
     std::cout << "Vulkan renderer cleaned up." << std::endl;
 }

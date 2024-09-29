@@ -13,6 +13,9 @@ bool framebufferResized = false;
 
 // Window Handling - Resize Callback
 void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
+    (void)width;  // Prevent unused parameter warning
+    (void)height; // Prevent unused parameter warning
+    
     auto renderer = reinterpret_cast<VulkanRenderer*>(glfwGetWindowUserPointer(window));
     if (renderer) {
         framebufferResized = true;  // Mark that the framebuffer was resized
