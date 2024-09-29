@@ -10,10 +10,10 @@ RandomXMiner::~RandomXMiner() {
 }
 
 void RandomXMiner::initialize(const uint8_t* key, size_t key_size) {
-    randomx_cache* cache = randomx_create_cache(RANDOMX_FLAG_DEFAULT, key, key_size);
+    randomx_cache* cache = randomx_alloc_cache(RANDOMX_FLAG_DEFAULT); // Updated function name
     randomx_init_cache(cache, key, key_size);
 
-    dataset = randomx_allocate_dataset(RANDOMX_FLAG_DEFAULT);
+    dataset = randomx_alloc_dataset(RANDOMX_FLAG_DEFAULT); // Updated function name
     randomx_init_dataset(dataset, cache, 0, randomx_dataset_item_count());
     randomx_release_cache(cache);
 
