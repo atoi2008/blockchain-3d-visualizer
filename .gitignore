@@ -1,10 +1,5 @@
 # Ignore the .vscode directory except for specific files
 .vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-!.vscode/*.code-snippets
 
 # Ignore local history for Visual Studio Code
 .history/
