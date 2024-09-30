@@ -2,6 +2,7 @@
 #include "VulkanRenderer.h"
 #include <stdexcept>
 #include <iostream>
+#include <string.h>
 
 VulkanRenderer::VulkanRenderer(GLFWwindow* win) : window(win) {} // Initialize window in constructor
 
@@ -159,7 +160,37 @@ void VulkanRenderer::render() {
     vkQueuePresentKHR(graphicsQueue, &presentInfo);
 }
 
-bool VulkanRenderer::checkValidationLayerSupport() {
-    // Check for validation layer support
-    // This function needs to be implemented
+bool VulkanRenderer::checkValidationLayerSupport()
+{
+    uint32_t layerCount;
+    vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+    std::vector<VkLayerProperties> availableLayers(layerCount);
+    vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+
+    // Define the validation layers you want to check
+    const std::vector<const char *> validationLayers = {
+        "VK_LAYER_KHRONOS_validation" // Example validation layer
+    };
+
+    // Check if each requested validation layer is available
+    for (const char *layerName : validationLayers)
+    {
+        bool layerFound = false;
+
+        for (const auto &layerProperties : availableLayers)
+        {
+            if (strcmp(layerName, layerProperties.layerName) == 0)
+            {
+                layerFound = true;
+                break;
+            }
+        }
+
+        if (!layerFound)
+        {
+            return false; // Return false if any layer is not found
+        }
+    }
+
+    return true; // All requested validation layers are supported
 }
