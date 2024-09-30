@@ -30,11 +30,15 @@ set(CMAKE_TOOLCHAIN_FILE "${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
 set(GLFW_INCLUDE_DIR "${VCPKG_ROOT}/installed/x64-windows/include")
 set(GLM_INCLUDE_DIR "${VCPKG_ROOT}/installed/x64-windows/include")
 
+# Include RandomX
+set(RandomX_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/libs/randomx/src")
+
 # Add include directories
 include_directories(
     "${GLFW_INCLUDE_DIR}"
     "${GLM_INCLUDE_DIR}"
     "${Vulkan_INCLUDE_DIR}"
+    "${RandomX_INCLUDE_DIR}"
 )
 
 # Link GLFW and GLM
