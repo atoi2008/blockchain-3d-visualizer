@@ -8,7 +8,6 @@ VulkanRenderer::VulkanRenderer(GLFWwindow* win) : window(win) {} // Initialize w
 void VulkanRenderer::init() {
     createInstance();
     // Create surface
-    // You need to pass your GLFW window to create the surface
     if (glfwCreateWindowSurface(instance, getWindow(), nullptr, &surface) != VK_SUCCESS) {
         throw std::runtime_error("Failed to create window surface!");
     }
@@ -45,7 +44,7 @@ void VulkanRenderer::setFramebufferResizedFlag(bool resized) {
 }
 
 GLFWwindow* VulkanRenderer::getWindow() {
-    return window; // Ensure you have the window initialized
+    return window; 
 }
 
 void VulkanRenderer::createInstance() {
@@ -83,7 +82,7 @@ void VulkanRenderer::createSwapchain() {
     // Create swapchain logic
     VkSwapchainCreateInfoKHR createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    createInfo.surface = surface; // Set this to your created Vulkan surface
+    createInfo.surface = surface; 
     // Add additional parameters like minImageCount, imageFormat, etc.
 
     if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapchain) != VK_SUCCESS) {
@@ -107,7 +106,7 @@ void VulkanRenderer::cleanupSwapchain() {
 void VulkanRenderer::createCommandBuffer() {
     VkCommandPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    poolInfo.queueFamilyIndex = graphicsQueueFamilyIndex; // Replace with your queue family index
+    poolInfo.queueFamilyIndex = graphicsQueueFamilyIndex; 
     poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
     if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
@@ -155,7 +154,7 @@ void VulkanRenderer::render() {
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = &swapchain;
-    presentInfo.pImageIndices = &imageIndex; // Replace with your current image index
+    presentInfo.pImageIndices = &imageIndex; 
 
     vkQueuePresentKHR(graphicsQueue, &presentInfo);
 }

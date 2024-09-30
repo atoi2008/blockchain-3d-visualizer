@@ -12,6 +12,10 @@ if(EXISTS "${CMAKE_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake")
     set(CMAKE_TOOLCHAIN_FILE "${CMAKE_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain file")
 endif()
 
+# 
+set(glfw3_DIR "E:/source/vcpkg/installed/x64-windows/share/glfw3")
+set(glm_DIR "E:/source/vcpkg/installed/x64-windows/include/glm")
+
 # Add the source directory for RandomX
 add_subdirectory(libs/randomx)
 
@@ -39,6 +43,5 @@ target_link_libraries(blockchain-3d-visualizer
     PRIVATE
     Vulkan::Vulkan  # Vulkan built-in CMake target
     glfw  # GLFW CMake target
-    glm::glm-header-only  # glm header-only version
     randomx  # Link with RandomX
 )

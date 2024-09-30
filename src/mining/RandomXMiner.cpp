@@ -23,8 +23,20 @@ void RandomXMiner::initialize(const uint8_t* key, size_t key_size) {
 void RandomXMiner::mine() {
     mining_active = true;
     while (mining_active) {
-        // Mining loop with RandomX hashing logic
+
+        // TODO: Mining loop with RandomX hashing logic
+        /*
+            while (!isValidHash(block.hash)) {
+            block.nonce++;
+            block.hash = calculateHash(block);
+        }
+        std::lock_guard<std::mutex> lock(minedBlocksMutex);
+        minedBlocks.push_back(block);
+
+        */
+
         std::cout << "Mining in progress..." << std::endl;
+        
     }
 }
 

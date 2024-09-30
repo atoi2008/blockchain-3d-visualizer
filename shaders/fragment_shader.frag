@@ -1,7 +1,10 @@
-#version 450
-
-layout(location = 0) out vec4 outColor;
+// Example GLSL fragment shader for glowing effect
+uniform float time;
+in vec3 blockColor;
+out vec4 FragColor;
 
 void main() {
-    outColor = vec4(1.0, 0.5, 0.0, 1.0); // Orange color
+    float intensity = abs(sin(time));  // Pulsating effect
+    vec3 glow = blockColor * intensity;
+    FragColor = vec4(glow, 1.0);
 }
