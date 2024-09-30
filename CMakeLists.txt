@@ -18,17 +18,7 @@ if(EXISTS "${CMAKE_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake")
 endif()
 
 # Add the source directory for RandomX
-add_subdirectory(libs/randomx)
-
-# Find Vulkan
-find_package(Vulkan REQUIRED)
-
-# Find GLFW and GLM using the recommended CMake targets
-find_package(glfw3 CONFIG REQUIRED)
-find_package(glm CONFIG REQUIRED)
-
-# Include directories
-include_directories(${CMAKE_SOURCE_DIR}/libs/randomx/src)  # Include RandomX headers
+set(RandomX_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/libs/randomx/src")
 
 # Add the executable
 add_executable(blockchain-3d-visualizer
@@ -44,6 +34,18 @@ target_link_libraries(blockchain-3d-visualizer
     glfw  # GLFW CMake target
     randomx  # Link with RandomX
 )
+
+# Include directories for target
+target_include_directories(blockchain-3d-visualizer PRIVATE
+    ${RandomX_INCLUDE_DIR}  # Include RandomX headers
+)
+
+# Find Vulkan
+find_package(Vulkan REQUIRED)
+
+# Find GLFW and GLM using the recommended CMake targets
+find_package(glfw3 CONFIG REQUIRED)
+find_package(glm CONFIG REQUIRED)
 
 # Message to verify configuration
 message(STATUS "CMake configuration complete for ${CMAKE_SYSTEM_NAME} with C++ standard ${CMAKE_CXX_STANDARD}")
