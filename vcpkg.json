@@ -1,0 +1,10 @@
+{
+    "name": "blockchain-3d-visualizer",
+    "version": "1.0.0",
+    "dependencies": [
+      "vulkan",
+      "glfw3",
+      "glm"
+    ]
+  }
+  
