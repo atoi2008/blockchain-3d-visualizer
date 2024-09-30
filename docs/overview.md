@@ -25,3 +25,4 @@ The mining and rendering processes run concurrently, with mining data being shar
 - **Improved Graphics**: Procedural terrain generation based on mining difficulty.
 - **Networked Mining**: Real-time data from multiple miners visualized in a shared 3D space.
 - **Customizable Visuals**: Allow users to change rendering styles based on mining data (e.g., different color schemes for high hash rates).
+- **Additional Supported Algorithms** for CPU-based cryptocurrency proof of work
