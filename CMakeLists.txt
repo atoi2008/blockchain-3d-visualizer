@@ -19,20 +19,23 @@ endif()
 
 # Platform-specific configurations
 if(MSVC)
-    # Windows specific configurations
     message(STATUS "Configuring for MSVC (Windows)")
-    add_definitions(-D_CRT_SECURE_NO_WARNINGS)  # Suppress some MSVC warnings
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS)  # Suppress MSVC warnings
 else()
-    # Linux/WSL-specific configurations
     message(STATUS "Configuring for Linux/WSL")
 endif()
 
-# Add the source directory for RandomX
+# Add the RandomX library
+add_subdirectory(libs/randomx)  # RandomX has its own CMakeLists.txt
+
+# Set the path for RandomX include directory
 set(RandomX_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/libs/randomx/src")
 
-# Add include directories
-include_directories("${RandomX_INCLUDE_DIR}")
 
+# Add include directories for RandomX
+target_include_directories(randomx PUBLIC
+    "${RandomX_INCLUDE_DIR}"
+)
 # Find Vulkan
 find_package(Vulkan REQUIRED)
 
@@ -53,7 +56,7 @@ target_link_libraries(blockchain-3d-visualizer
     Vulkan::Vulkan  # Vulkan built-in CMake target
     glfw  # GLFW CMake target
     glm::glm  # glm CMake target
-    randomx  # Link with RandomX
+    randomx  # Link with RandomX from add_subdirectory
 )
 
 # Message to verify configuration
