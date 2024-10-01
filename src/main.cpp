@@ -41,7 +41,7 @@ void startMining() {
 
 int main() {
 
-    std::cout << "Startup";
+    std::cout << "Startup\n";
     
     // Initialize GLFW
     if (!glfwInit()) {

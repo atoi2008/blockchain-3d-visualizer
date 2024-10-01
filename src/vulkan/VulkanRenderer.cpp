@@ -51,6 +51,7 @@ void VulkanRenderer::cleanup() {
     vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
     vkDestroyCommandPool(device, commandPool, nullptr);
     vkDestroySurfaceKHR(instance, surface, nullptr);
+    cleanupSwapchain(); // this needs to be done before destroying device
     vkDestroyDevice(device, nullptr);
     vkDestroyInstance(instance, nullptr);
     glfwDestroyWindow(window);
@@ -72,6 +73,13 @@ void VulkanRenderer::recreateSwapchain() {
 
 void VulkanRenderer::setFramebufferResizedFlag(bool resized) {
     framebufferResized = resized;
+}
+
+void VulkanRenderer::checkFramebufferResized() {
+    if (framebufferResized) {
+        recreateSwapchain(); // This method should handle all the necessary steps
+        framebufferResized = false; // Reset the flag
+    }
 }
 
 GLFWwindow* VulkanRenderer::getWindow() {
@@ -243,27 +251,102 @@ void VulkanRenderer::createLogicalDevice() {
         presentQueue = graphicsQueue;
     }
 }
+// swapchain helper functions
+// Function to query swap chain support details for a physical device
+SwapChainSupportDetails VulkanRenderer::querySwapChainSupport(VkPhysicalDevice device)
+{
+    SwapChainSupportDetails details;
 
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
+
+    uint32_t formatCount;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
+    if (formatCount != 0)
+    {
+        details.formats.resize(formatCount);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, details.formats.data());
+    }
+
+    uint32_t presentModeCount;
+    vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr);
+    if (presentModeCount != 0)
+    {
+        details.presentModes.resize(presentModeCount);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, details.presentModes.data());
+    }
+
+    return details;
+}
+
+// Function to choose the best surface format
+VkSurfaceFormatKHR VulkanRenderer::chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats)
+{
+    for (const auto &availableFormat : availableFormats)
+    {
+        if (availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+        {
+            return availableFormat;
+        }
+    }
+    return availableFormats[0]; // Return the first available format if preferred one is not found
+}
+
+// Function to choose the best present mode
+VkPresentModeKHR VulkanRenderer::chooseSwapPresentMode(const std::vector<VkPresentModeKHR> &availablePresentModes)
+{
+    for (const auto &availablePresentMode : availablePresentModes)
+    {
+        if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
+        {
+            return availablePresentMode; // Prefer mailbox mode if available
+        }
+    }
+    return VK_PRESENT_MODE_FIFO_KHR; // Fallback to FIFO mode
+}
+
+// Function to choose the swap extent
+VkExtent2D VulkanRenderer::chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities)
+{
+    if (capabilities.currentExtent.width != UINT32_MAX)
+    {
+        return capabilities.currentExtent; // Use current extent if valid
+    }
+    else
+    {
+        // Specify your desired width and height
+        int width, height;
+        glfwGetFramebufferSize(window, &width, &height);
+        VkExtent2D actualExtent = {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
+
+        // Clamp the extent to the min and max values
+        actualExtent.width = std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, actualExtent.width));
+        actualExtent.height = std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, actualExtent.height));
+
+        return actualExtent;
+    }
+}
 
 void VulkanRenderer::createSwapchain() {
+    SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice);
+
+    VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
+    VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
+    VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities);
+
+    // Create the swapchain using the chosen parameters
     VkSwapchainCreateInfoKHR createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     createInfo.surface = surface;
-
-    // Set swapchain parameters (you should query for actual values)
-    createInfo.minImageCount = 2; // Double buffering
-    createInfo.imageFormat = VK_FORMAT_B8G8R8A8_UNORM; // Color format
-    createInfo.imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
-    createInfo.imageExtent = {800, 600}; // Specify size based on window
+    createInfo.minImageCount = swapChainSupport.capabilities.minImageCount + 1; // Double buffering
+    createInfo.imageFormat = surfaceFormat.format;
+    createInfo.imageColorSpace = surfaceFormat.colorSpace;
+    createInfo.imageExtent = extent;
     createInfo.imageArrayLayers = 1;
     createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-
-    // Specify sharing mode
     createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE; // No sharing between queues
-
-    createInfo.preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
+    createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
     createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-    createInfo.presentMode = VK_PRESENT_MODE_FIFO_KHR; // V-Sync
+    createInfo.presentMode = presentMode;
     createInfo.clipped = VK_TRUE;
     createInfo.oldSwapchain = VK_NULL_HANDLE; // This is for recreating
 
@@ -271,17 +354,47 @@ void VulkanRenderer::createSwapchain() {
         throw std::runtime_error("Failed to create swapchain!");
     }
 
-    // Retrieve the swapchain images (optional, add this as needed)
+    // Retrieve the swapchain images (add this as needed)
     // vkGetSwapchainImagesKHR(device, swapchain, &imageCount, nullptr);
     // vkGetSwapchainImagesKHR(device, swapchain, &imageCount, swapchainImages.data());
 }
 
+
 void VulkanRenderer::createImageViews() {
-    // Create image views from swapchain images
+    swapchainImageViews.resize(swapchainImages.size());
+
+    for (size_t i = 0; i < swapchainImages.size(); i++) {
+        VkImageViewCreateInfo createInfo{};
+        createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        createInfo.image = swapchainImages[i];
+        createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        createInfo.format = swapchainImageFormat;
+        createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+        createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+        createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+        createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+        createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        createInfo.subresourceRange.baseMipLevel = 0;
+        createInfo.subresourceRange.levelCount = 1;
+        createInfo.subresourceRange.baseArrayLayer = 0;
+        createInfo.subresourceRange.layerCount = 1;
+
+        if (vkCreateImageView(device, &createInfo, nullptr, &swapchainImageViews[i]) != VK_SUCCESS) {
+            throw std::runtime_error("Failed to create image views!");
+        }
+    }
 }
 
 void VulkanRenderer::cleanupSwapchain() {
-    // Clean up swapchain
+    for (VkImageView imageView : swapchainImageViews) {
+        vkDestroyImageView(device, imageView, nullptr);
+    }
+    swapchainImageViews.clear();
+
+    if (swapchain != VK_NULL_HANDLE) {
+        vkDestroySwapchainKHR(device, swapchain, nullptr);
+        swapchain = VK_NULL_HANDLE; // Set to null after destruction
+    }
 }
 
 void VulkanRenderer::createCommandBuffer() {
@@ -305,9 +418,80 @@ void VulkanRenderer::createCommandBuffer() {
     }
 }
 
-void VulkanRenderer::render() {
-    // Render function logic
+// Create Render Pass
+void VulkanRenderer::createRenderPass() {
+    VkAttachmentDescription colorAttachment{};
+    colorAttachment.format = swapchainImageFormat; // Format of the swapchain images
+    colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT; // Number of samples for the attachment
+    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR; // Clear before rendering
+    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE; // Store the results
+    colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE; // Not using stencil
+    colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE; // Not using stencil
+    colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED; // Initial layout
+    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR; // Final layout
+    colorAttachmentRef.attachment = 0; // The index of the color attachment
+    colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL; // The layout of the attachment
+
+
+    // Create Render Pass
+    VkRenderPassCreateInfo renderPassInfo{};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    renderPassInfo.attachmentCount = 1;
+    renderPassInfo.pAttachments = &colorAttachment;
+
+    // Specify the subpass
+    VkSubpassDescription subpass{};
+    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpass.colorAttachmentCount = 1;
+    subpass.pColorAttachments = &colorAttachmentRef; // Set to the color attachment reference
+
+    renderPassInfo.subpassCount = 1;
+    renderPassInfo.pSubpasses = &subpass;
+
+    // Create the render pass
+    if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create render pass!");
+    }
 }
+
+
+/*** Render Function */
+void VulkanRenderer::render() {
+    // Acquire the next image from the swapchain
+    vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, nullptr, nullptr, &currentImage);
+
+    // Ensure the command buffer is recorded
+    if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to begin command buffer!");
+    }
+
+    // Define the render pass info
+    VkRenderPassBeginInfo renderPassInfo{};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassInfo.renderPass = renderPass; // The render pass
+    renderPassInfo.framebuffer = swapchainFramebuffers[currentImage]; // Framebuffer for current image
+    renderPassInfo.renderArea.offset = {0, 0}; // Start rendering from the top-left corner
+    renderPassInfo.renderArea.extent = swapchainExtent; // The extent of the framebuffer
+
+    // Clear color
+    VkClearValue clearColor = {};
+    clearColor.color = {{1.0f, 1.0f, 1.0f, 1.0f}}; // White background
+    renderPassInfo.clearValueCount = 1;
+    renderPassInfo.pClearValues = &clearColor;
+
+    // Begin the render pass
+    vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+    // Rendering commands go here...
+
+    vkCmdEndRenderPass(commandBuffer);
+    if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to end command buffer!");
+    }
+}
+
+
+
 
 bool VulkanRenderer::checkValidationLayerSupport() {
     uint32_t layerCount;
