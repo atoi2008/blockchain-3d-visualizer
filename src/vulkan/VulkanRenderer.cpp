@@ -1,27 +1,25 @@
-// VulkanRenderer.cpp
 #include "VulkanRenderer.h"
 #include <stdexcept>
 #include <iostream>
 #include <string.h>
 
-VulkanRenderer::VulkanRenderer(GLFWwindow* win) : window(win) {} // Initialize window in constructor
+VulkanRenderer::VulkanRenderer(GLFWwindow* win) : window(win) {}
 
 void VulkanRenderer::init() {
     createInstance();
-    // Create surface
-    if (glfwCreateWindowSurface(instance, getWindow(), nullptr, &surface) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create window surface!");
-    }
+    createSurface();
+    pickPhysicalDevice();
+    createLogicalDevice();
     createSwapchain();
     createImageViews();
-    createCommandBuffer(); // Call to create command buffer
+    createCommandBuffer();
 }
 
 void VulkanRenderer::cleanup() {
     cleanupSwapchain();
-    vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer); // Free the command buffer
-    vkDestroyCommandPool(device, commandPool, nullptr); // Destroy command pool
-    vkDestroySurfaceKHR(instance, surface, nullptr); // Destroy surface
+    vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
+    vkDestroyCommandPool(device, commandPool, nullptr);
+    vkDestroySurfaceKHR(instance, surface, nullptr);
     vkDestroyDevice(device, nullptr);
     vkDestroyInstance(instance, nullptr);
     glfwDestroyWindow(window);
@@ -37,7 +35,7 @@ void VulkanRenderer::recreateSwapchain() {
     cleanupSwapchain();
     createSwapchain();
     createImageViews();
-    createCommandBuffer(); // Recreate command buffer
+    createCommandBuffer();
 }
 
 void VulkanRenderer::setFramebufferResizedFlag(bool resized) {
@@ -49,11 +47,9 @@ GLFWwindow* VulkanRenderer::getWindow() {
 }
 
 void VulkanRenderer::createInstance() {
-    // Create Vulkan instance
     VkInstanceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 
-    // Additional app info
     VkApplicationInfo appInfo{};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     appInfo.pApplicationName = "Blockchain 3D Visualizer";
@@ -64,12 +60,10 @@ void VulkanRenderer::createInstance() {
 
     createInfo.pApplicationInfo = &appInfo;
 
-    // Check for validation layers
     if (!checkValidationLayerSupport()) {
         throw std::runtime_error("Validation layers requested, but not available!");
     }
 
-    // Set validation layers
     const std::vector<const char*> validationLayers = {"VK_LAYER_KHRONOS_validation"};
     createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
     createInfo.ppEnabledLayerNames = validationLayers.data();
@@ -79,35 +73,147 @@ void VulkanRenderer::createInstance() {
     }
 }
 
+void VulkanRenderer::createSurface() {
+    if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create window surface!");
+    }
+}
+
+void VulkanRenderer::pickPhysicalDevice() {
+    uint32_t deviceCount = 0;
+    vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+    if (deviceCount == 0) {
+        throw std::runtime_error("Failed to find GPUs with Vulkan support!");
+    }
+
+    std::vector<VkPhysicalDevice> devices(deviceCount);
+    vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
+
+    // Select the first available physical device for simplicity
+    for (const auto& device : devices) {
+        QueueFamilyIndices indices = findQueueFamilies(device);
+        if (indices.isComplete()) {
+            physicalDevice = device;
+            graphicsQueueFamilyIndex = indices.graphicsFamily.value();
+            presentQueueFamilyIndex = indices.presentFamily.value();
+            break;
+        }
+    }
+
+    if (physicalDevice == VK_NULL_HANDLE) {
+        throw std::runtime_error("Failed to find a suitable GPU!");
+    }
+}
+
+QueueFamilyIndices VulkanRenderer::findQueueFamilies(VkPhysicalDevice device) {
+    QueueFamilyIndices indices;
+
+    uint32_t queueFamilyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+
+    for (uint32_t i = 0; i < queueFamilyCount; i++) {
+        if (queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+            indices.graphicsFamily = i;
+        }
+
+        VkBool32 presentSupport = false;
+        vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
+        if (presentSupport) {
+            indices.presentFamily = i;
+        }
+
+        if (indices.isComplete()) {
+            break;
+        }
+    }
+
+    return indices;
+}
+
+void VulkanRenderer::createLogicalDevice() {
+    // Create a logical device
+    std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+
+    // Graphics queue
+    float queuePriority = 1.0f;
+    VkDeviceQueueCreateInfo graphicsQueueInfo{};
+    graphicsQueueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    graphicsQueueInfo.queueFamilyIndex = graphicsQueueFamilyIndex;
+    graphicsQueueInfo.queueCount = 1;
+    graphicsQueueInfo.pQueuePriorities = &queuePriority;
+    queueCreateInfos.push_back(graphicsQueueInfo);
+
+    // Present queue
+    VkDeviceQueueCreateInfo presentQueueInfo{};
+    presentQueueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    presentQueueInfo.queueFamilyIndex = presentQueueFamilyIndex;
+    presentQueueInfo.queueCount = 1;
+    presentQueueInfo.pQueuePriorities = &queuePriority;
+    queueCreateInfos.push_back(presentQueueInfo);
+
+    VkPhysicalDeviceFeatures deviceFeatures{};
+    deviceFeatures.samplerAnisotropy = VK_TRUE; // Enable anisotropic filtering
+
+    VkDeviceCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
+    createInfo.pQueueCreateInfos = queueCreateInfos.data();
+    createInfo.pEnabledFeatures = &deviceFeatures;
+
+    if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create logical device!");
+    }
+
+    // Get handles to the graphics and present queues
+    vkGetDeviceQueue(device, graphicsQueueFamilyIndex, 0, &graphicsQueue);
+    vkGetDeviceQueue(device, presentQueueFamilyIndex, 0, &presentQueue);
+}
+
 void VulkanRenderer::createSwapchain() {
-    // Create swapchain logic
     VkSwapchainCreateInfoKHR createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    createInfo.surface = surface; 
-    // Add additional parameters like minImageCount, imageFormat, etc.
+    createInfo.surface = surface;
+
+    // Set swapchain parameters (you should query for actual values)
+    createInfo.minImageCount = 2; // Double buffering
+    createInfo.imageFormat = VK_FORMAT_B8G8R8A8_UNORM; // Color format
+    createInfo.imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+    createInfo.imageExtent = {800, 600}; // Specify size based on window
+    createInfo.imageArrayLayers = 1;
+    createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+    // Specify sharing mode
+    createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE; // No sharing between queues
+
+    createInfo.preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
+    createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+    createInfo.presentMode = VK_PRESENT_MODE_FIFO_KHR; // V-Sync
+    createInfo.clipped = VK_TRUE;
+    createInfo.oldSwapchain = VK_NULL_HANDLE; // This is for recreating
 
     if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapchain) != VK_SUCCESS) {
         throw std::runtime_error("Failed to create swapchain!");
     }
+
+    // Retrieve the swapchain images (optional, add this as needed)
+    // vkGetSwapchainImagesKHR(device, swapchain, &imageCount, nullptr);
+    // vkGetSwapchainImagesKHR(device, swapchain, &imageCount, swapchainImages.data());
 }
 
 void VulkanRenderer::createImageViews() {
     // Create image views from swapchain images
-    // You may need to retrieve the images from the swapchain first
-    // Then create VkImageView for each image
 }
 
 void VulkanRenderer::cleanupSwapchain() {
-    for (auto imageView : swapchainImageViews) {
-        vkDestroyImageView(device, imageView, nullptr);
-    }
-    vkDestroySwapchainKHR(device, swapchain, nullptr);
+    // Clean up swapchain
 }
 
 void VulkanRenderer::createCommandBuffer() {
     VkCommandPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    poolInfo.queueFamilyIndex = graphicsQueueFamilyIndex; 
+    poolInfo.queueFamilyIndex = graphicsQueueFamilyIndex;
     poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
     if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
@@ -126,71 +232,33 @@ void VulkanRenderer::createCommandBuffer() {
 }
 
 void VulkanRenderer::render() {
-    // Begin rendering command buffer
-    VkResult result = vkBeginCommandBuffer(commandBuffer, nullptr);
-    if (result != VK_SUCCESS) {
-        throw std::runtime_error("Failed to begin recording command buffer!");
-    }
-
-    // Specify rendering operations here (e.g., vkCmdBindPipeline(), vkCmdDraw(), etc.)
-
-    // End recording command buffer
-    result = vkEndCommandBuffer(commandBuffer);
-    if (result != VK_SUCCESS) {
-        throw std::runtime_error("Failed to record command buffer!");
-    }
-
-    // Submit command buffer to the graphics queue
-    VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &commandBuffer;
-
-    if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to submit draw command buffer!");
-    }
-
-    // Present the swapchain image
-    VkPresentInfoKHR presentInfo{};
-    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-    presentInfo.swapchainCount = 1;
-    presentInfo.pSwapchains = &swapchain;
-    presentInfo.pImageIndices = &imageIndex; 
-
-    vkQueuePresentKHR(graphicsQueue, &presentInfo);
+    // Render function logic
 }
 
-bool VulkanRenderer::checkValidationLayerSupport()
-{
+bool VulkanRenderer::checkValidationLayerSupport() {
     uint32_t layerCount;
     vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
     std::vector<VkLayerProperties> availableLayers(layerCount);
     vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
 
-    // Define the validation layers you want to check
-    const std::vector<const char *> validationLayers = {
-        "VK_LAYER_KHRONOS_validation" // Example validation layer
+    const std::vector<const char*> validationLayers = {
+        "VK_LAYER_KHRONOS_validation"
     };
 
-    // Check if each requested validation layer is available
-    for (const char *layerName : validationLayers)
-    {
+    for (const char* layerName : validationLayers) {
         bool layerFound = false;
 
-        for (const auto &layerProperties : availableLayers)
-        {
-            if (strcmp(layerName, layerProperties.layerName) == 0)
-            {
+        for (const auto& layerProperties : availableLayers) {
+            if (strcmp(layerName, layerProperties.layerName) == 0) {
                 layerFound = true;
                 break;
             }
         }
 
-        if (!layerFound)
-        {
-            return false; // Return false if any layer is not found
+        if (!layerFound) {
+            return false;
         }
     }
 
-    return true; // All requested validation layers are supported
+    return true;
 }

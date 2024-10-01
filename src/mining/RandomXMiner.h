@@ -1,7 +1,11 @@
-#ifndef RANDOMX_MINER_H
-#define RANDOMX_MINER_H
+#ifndef RANDOM_X_MINER_H
+#define RANDOM_X_MINER_H
 
 #include "randomx.h"
+#include <cstdint>
+#include <string>
+#include <vector>
+#include <mutex>
 
 class RandomXMiner {
 public:
@@ -13,9 +17,15 @@ public:
     void stopMining();
 
 private:
+    std::string prepareInputData(uint64_t nonce);
+    std::string calculateHash(uint64_t nonce);
+    bool isValidHash(const uint8_t* hash, size_t length, int difficulty);
+
     randomx_vm* vm;
     randomx_dataset* dataset;
     bool mining_active;
+    std::vector<std::string> minedBlocks;
+    std::mutex minedBlocksMutex;
 };
 
-#endif // RANDOMX_MINER_H
+#endif // RANDOM_X_MINER_H
