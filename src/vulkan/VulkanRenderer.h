@@ -44,6 +44,8 @@ private:
     void createCommandBuffer();
     void createRenderPass();
     bool checkValidationLayerSupport();
+    void presentImage(uint32_t imageIndex);
+    void drawFrame();
 
     QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device); 
 
@@ -82,6 +84,12 @@ private:
     VkCommandBufferBeginInfo beginInfo{}; // Command buffer begin info
     VkAttachmentReference colorAttachmentRef{}; // Reference to the color attachment
     uint32_t currentImage = 0; // Index of the current image being rendered
+
+    VkSemaphore renderFinishedSemaphore;
+    VkFence inFlightFence;
+    size_t currentFrame = 0;
+    const int MAX_FRAMES_IN_FLIGHT = 2;  // Adjust as needed
+    std::vector<VkFence> inFlightFences; // To synchronize frame rendering
 };
 
 #endif // VULKAN_RENDERER_H

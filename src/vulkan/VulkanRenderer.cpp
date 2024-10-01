@@ -3,7 +3,7 @@
 #include <iostream>
 #include <string.h>
 
-// This is a debug callback function is defined outside of the VulkanRenderer class.
+// This is a debug callback function that is defined outside of the VulkanRenderer class.
 VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
     VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
     VkDebugUtilsMessageTypeFlagsEXT messageType,
@@ -26,12 +26,28 @@ void VulkanRenderer::init()
     createImageViews();
     createCommandBuffer();
 
+    // Create semaphores for image availability and rendering completion
     VkSemaphoreCreateInfo semaphoreInfo{};
     semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-    if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphore) != VK_SUCCESS)
+    if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphore) != VK_SUCCESS ||
+        vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphore) != VK_SUCCESS)
     {
-        throw std::runtime_error("Failed to create image available semaphore!");
+        throw std::runtime_error("Failed to create semaphores!");
+    }
+
+    // Create fences for synchronizing frame rendering
+    VkFenceCreateInfo fenceInfo{};
+    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+    inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+    {
+        if (vkCreateFence(device, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS)
+        {
+            throw std::runtime_error("Failed to create fence!");
+        }
     }
 }
 
@@ -84,6 +100,52 @@ void VulkanRenderer::cleanup() {
     glfwTerminate();
 }
 
+
+void VulkanRenderer::presentImage(uint32_t imageIndex) {
+    VkPresentInfoKHR presentInfo{};
+    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+
+    presentInfo.waitSemaphoreCount = 1;
+    presentInfo.pWaitSemaphores = &renderFinishedSemaphore; // Wait for rendering to complete
+    presentInfo.swapchainCount = 1;
+    presentInfo.pSwapchains = &swapchain;
+    presentInfo.pImageIndices = &imageIndex;
+    presentInfo.pResults = nullptr; // Optional
+
+    VkResult result = vkQueuePresentKHR(presentQueue, &presentInfo);
+    
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+        recreateSwapchain();
+    } else if (result != VK_SUCCESS) {
+        throw std::runtime_error("Failed to present swap chain image!");
+    }
+}
+
+void VulkanRenderer::drawFrame() {
+    // Wait for the previous frame to finish
+    vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
+
+    uint32_t imageIndex;
+    VkResult result = vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+        recreateSwapchain();
+        return;
+    } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+        throw std::runtime_error("Failed to acquire swap chain image!");
+    }
+
+    //TODO: Submit the rendering command buffer for the acquired image
+    // Submit commands here...
+
+    // Present the image
+    presentImage(imageIndex);
+
+    currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT; // Cycle to the next frame
+}
+
+
+
 bool VulkanRenderer::isRunning() {
     return !glfwWindowShouldClose(window);
 }
@@ -134,10 +196,10 @@ void VulkanRenderer::createInstance() {
     createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
     createInfo.ppEnabledLayerNames = validationLayers.data();
 
-    // Enable the debug utils extension
     uint32_t glfwExtensionCount = 0;
     const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
     std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+    // Enable the debug utils extension
     extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
     createInfo.ppEnabledExtensionNames = extensions.data();
@@ -375,14 +437,23 @@ void VulkanRenderer::createSwapchain() {
     createInfo.clipped = VK_TRUE;
     createInfo.oldSwapchain = VK_NULL_HANDLE; // This is for recreating
 
+    // Create the swapchain
     if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapchain) != VK_SUCCESS) {
         throw std::runtime_error("Failed to create swapchain!");
     }
 
-    // Retrieve the swapchain images (add this as needed)
-    // vkGetSwapchainImagesKHR(device, swapchain, &imageCount, nullptr);
-    // vkGetSwapchainImagesKHR(device, swapchain, &imageCount, swapchainImages.data());
+    // Retrieve the swapchain images
+    uint32_t imageCount;  // Declare the variable to hold the number of images
+    vkGetSwapchainImagesKHR(device, swapchain, &imageCount, nullptr); // Get the image count first
+
+    swapchainImages.resize(imageCount); // Resize the vector to hold the images
+    vkGetSwapchainImagesKHR(device, swapchain, &imageCount, swapchainImages.data()); // Now get the images
+
+    // Save the swapchain image format and extent for later use
+    swapchainImageFormat = surfaceFormat.format;
+    swapchainExtent = extent;
 }
+
 
 
 void VulkanRenderer::createImageViews() {
@@ -518,6 +589,12 @@ void VulkanRenderer::render() {
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
         throw std::runtime_error("Failed to end command buffer!");
     }
+
+    //TODO: update mining stats or visuals before rendering
+    //updateMiningStats();
+    
+    drawFrame();
+
 }
 
 

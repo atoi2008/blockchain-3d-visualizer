@@ -82,6 +82,7 @@ int main() {
 
             renderer.render();  // Render the 3D environment
             // TODO: update the rendering based on mining results here
+            //
         }
     } catch (const std::exception& e) {
         std::cerr << "Rendering error: " << e.what() << std::endl;
