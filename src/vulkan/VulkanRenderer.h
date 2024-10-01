@@ -36,7 +36,8 @@ private:
     void cleanupSwapchain();
     void createCommandBuffer();
     bool checkValidationLayerSupport();
-    QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);  // Add the declaration here
+    
+    QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device); 
 
     GLFWwindow* window;
     VkInstance instance;
@@ -47,6 +48,8 @@ private:
     VkSwapchainKHR swapchain;
     VkCommandPool commandPool;
     VkCommandBuffer commandBuffer;
+    VkDebugUtilsMessengerEXT debugMessenger;
+
     VkSurfaceKHR surface;  // Declare surface member variable
 
     uint32_t graphicsQueueFamilyIndex;

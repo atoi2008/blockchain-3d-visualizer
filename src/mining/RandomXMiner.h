@@ -19,7 +19,8 @@ public:
 private:
     std::string prepareInputData(uint64_t nonce);
     std::string calculateHash(uint64_t nonce);
-    bool isValidHash(const uint8_t* hash, size_t length, int difficulty);
+    bool isValidHash(const uint8_t *hash, size_t length);
+    bool isValidHash(const uint8_t *hash, size_t length, int difficulty);
 
     randomx_vm* vm;
     randomx_dataset* dataset;

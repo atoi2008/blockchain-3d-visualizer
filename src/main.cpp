@@ -23,7 +23,10 @@ void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
 
 // Function to handle CPU mining
 void startMining() {
-    try {
+
+    std::cout << "startMining() called";
+    
+    /* try {
         // Initialize the mining engine
         RandomXMiner miner;
 
@@ -33,10 +36,13 @@ void startMining() {
         }
     } catch (const std::exception& e) {
         std::cerr << "Mining error: " << e.what() << std::endl;
-    }
+    } */
 }
 
 int main() {
+
+    std::cout << "Startup";
+    
     // Initialize GLFW
     if (!glfwInit()) {
         return -1;
