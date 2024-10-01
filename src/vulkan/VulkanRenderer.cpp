@@ -16,7 +16,8 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 
 VulkanRenderer::VulkanRenderer(GLFWwindow* win) : window(win) {}
 
-void VulkanRenderer::init() {
+void VulkanRenderer::init()
+{
     createInstance();
     createSurface();
     pickPhysicalDevice();
@@ -24,8 +25,15 @@ void VulkanRenderer::init() {
     createSwapchain();
     createImageViews();
     createCommandBuffer();
-}
 
+    VkSemaphoreCreateInfo semaphoreInfo{};
+    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+    if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphore) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create image available semaphore!");
+    }
+}
 
 VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
     auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
@@ -45,19 +53,36 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
 
 
 void VulkanRenderer::cleanup() {
+    // Destroy debug messenger first
     if (debugMessenger != VK_NULL_HANDLE) {
         DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
     }
+    
+    // Destroy the semaphore
+    vkDestroySemaphore(device, imageAvailableSemaphore, nullptr);
+    
+    // Free command buffers before destroying the command pool
     vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
+    
+    // Destroy command pool
     vkDestroyCommandPool(device, commandPool, nullptr);
+    
+    // Destroy the surface
     vkDestroySurfaceKHR(instance, surface, nullptr);
-    cleanupSwapchain(); // this needs to be done before destroying device
+    
+    // Clean up the swapchain before destroying the device
+    cleanupSwapchain(); 
+    
+    // Destroy logical device
     vkDestroyDevice(device, nullptr);
+    
+    // Destroy Vulkan instance last
     vkDestroyInstance(instance, nullptr);
+    
+    // Clean up GLFW
     glfwDestroyWindow(window);
     glfwTerminate();
 }
-
 
 bool VulkanRenderer::isRunning() {
     return !glfwWindowShouldClose(window);
@@ -458,9 +483,14 @@ void VulkanRenderer::createRenderPass() {
 /*** Render Function */
 void VulkanRenderer::render() {
     // Acquire the next image from the swapchain
-    vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, nullptr, nullptr, &currentImage);
+    vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &currentImage);
 
     // Ensure the command buffer is recorded
+    VkCommandBufferBeginInfo beginInfo{};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = 0; // Set to zero for default behavior
+    beginInfo.pInheritanceInfo = nullptr; // Only needed for secondary command buffers
+
     if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
         throw std::runtime_error("Failed to begin command buffer!");
     }
@@ -468,7 +498,7 @@ void VulkanRenderer::render() {
     // Define the render pass info
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = renderPass; // The render pass
+    renderPassInfo.renderPass = renderPass; // Your render pass
     renderPassInfo.framebuffer = swapchainFramebuffers[currentImage]; // Framebuffer for current image
     renderPassInfo.renderArea.offset = {0, 0}; // Start rendering from the top-left corner
     renderPassInfo.renderArea.extent = swapchainExtent; // The extent of the framebuffer
@@ -489,6 +519,7 @@ void VulkanRenderer::render() {
         throw std::runtime_error("Failed to end command buffer!");
     }
 }
+
 
 
 

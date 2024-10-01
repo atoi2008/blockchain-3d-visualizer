@@ -76,7 +76,7 @@ private:
     std::vector<VkFramebuffer> swapchainFramebuffers; // Framebuffers for the swapchain images
     VkClearValue clearColor; // Clear color value for the render pass
     VkFormat swapchainImageFormat; // To hold the format of the swapchain images
-
+    VkSemaphore imageAvailableSemaphore; // Declare the semaphore
     VkRenderPass renderPass; // Render pass
     VkExtent2D swapchainExtent; // Size of the swapchain images
     VkCommandBufferBeginInfo beginInfo{}; // Command buffer begin info
