@@ -46,7 +46,7 @@ void RandomXMiner::initialize(const uint8_t* key, size_t key_size) {
 std::string RandomXMiner::prepareInputData(uint64_t nonce) {
     std::ostringstream oss;
     oss << std::hex << nonce; // Convert nonce to hexadecimal string
-    return "block_header_data" + oss.str(); // Replace with actual block header data
+    return "block_header_data" + oss.str(); //TODO: Replace with actual block header data
 }
 
 std::string RandomXMiner::calculateHash(uint64_t nonce) {
