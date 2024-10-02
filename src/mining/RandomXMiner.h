@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <mutex>
+#include "Block.h" 
 
 class RandomXMiner {
 public:
@@ -17,8 +18,8 @@ public:
     void stopMining();
 
 private:
-    std::string prepareInputData(uint64_t nonce);
-    std::string calculateHash(uint64_t nonce);
+    std::string prepareInputData(const BlockHeader& header);
+    std::string calculateHash(const BlockHeader& header); // Fixed the parameter type here
     bool isValidHash(const uint8_t *hash, size_t length);
     bool isValidHash(const uint8_t *hash, size_t length, int difficulty);
 

@@ -43,14 +43,21 @@ void RandomXMiner::initialize(const uint8_t* key, size_t key_size) {
     }
 }
 
-std::string RandomXMiner::prepareInputData(uint64_t nonce) {
+std::string RandomXMiner::prepareInputData(const BlockHeader& header) {
     std::ostringstream oss;
-    oss << std::hex << nonce; // Convert nonce to hexadecimal string
-    return "block_header_data" + oss.str(); // Replace with actual block header data
+    oss << std::hex << header.nonce;  // Convert nonce to hexadecimal
+
+    // Concatenate all fields of the block header to form the data to be hashed
+    return std::to_string(header.version) +
+           header.prev_block_hash +
+           header.merkle_root +
+           std::to_string(header.timestamp) +
+           std::to_string(header.difficulty_target) +
+           oss.str();  // Append nonce as part of the input data
 }
 
-std::string RandomXMiner::calculateHash(uint64_t nonce) {
-    std::string inputData = prepareInputData(nonce); // Use the helper function
+std::string RandomXMiner::calculateHash(const BlockHeader& header) {
+    std::string inputData = prepareInputData(header);  // Pass the header, not just the nonce
 
     uint8_t hash[RANDOMX_HASH_SIZE];
     randomx_calculate_hash(vm, inputData.c_str(), inputData.size(), hash);
@@ -74,29 +81,27 @@ bool RandomXMiner::isValidHash(const uint8_t* hash, size_t length) {
 
 void RandomXMiner::mine() {
     mining_active = true;
-    uint64_t nonce = 0; // Initialize nonce
+
+    // Initialize block header with nonce = 0
+    BlockHeader header(1, "prev_hash", "merkle_root", time(nullptr), 0, DIFFICULTY);
 
     while (mining_active) {
-        std::string some_data = prepareInputData(nonce); // Use the helper function
+        // Increment nonce in the block header
+        header.nonce++; 
+
+        // Prepare input data using the updated header
+        std::string some_data = prepareInputData(header);
 
         uint8_t hash[RANDOMX_HASH_SIZE];
         randomx_calculate_hash(vm, some_data.data(), some_data.size(), hash);
 
         // Check if the hash is valid
-        if (isValidHash(hash, RANDOMX_HASH_SIZE)) { // Adjust difficulty here
+        if (isValidHash(hash, RANDOMX_HASH_SIZE)) {
             std::lock_guard<std::mutex> lock(minedBlocksMutex);
-            minedBlocks.push_back(calculateHash(nonce)); // Store valid hash
-            std::cout << "Valid hash found: " << calculateHash(nonce) << std::endl;
-            break; // Exit loop or handle accordingly
+            minedBlocks.push_back(calculateHash(header));  // Pass the entire header to calculateHash()
+            std::cout << "Valid hash found: " << calculateHash(header) << std::endl;
+            break;  // Stop mining after finding a valid hash
         }
-
-        nonce++; // Increment nonce
-
-        // Optional: Implement nonce limit
-        //if (nonce > MAX_NONCE) {
-        //    std::cout << "Nonce limit reached. Stopping mining." << std::endl;
-        //    break;
-        //}
     }
 }
 
