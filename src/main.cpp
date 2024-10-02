@@ -3,8 +3,8 @@
 #include <thread>
 #include <atomic>
 #include <GLFW/glfw3.h> // Include GLFW for window handling
-#include "vulkan/VulkanRenderer.h"  
-#include "mining/RandomXMiner.h"           
+#include "vulkan/VulkanRenderer.h"
+#include "mining/RandomXMiner.h"
 
 // Global atomic variable to control mining
 std::atomic<bool> isMining{true};
@@ -13,38 +13,47 @@ std::atomic<bool> isMining{true};
 bool framebufferResized = false;
 
 // Window Handling - Resize Callback
-void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
-    auto renderer = reinterpret_cast<VulkanRenderer*>(glfwGetWindowUserPointer(window));
-    if (renderer) {
-        framebufferResized = true; // Mark that the framebuffer was resized
+void framebufferResizeCallback(GLFWwindow *window, int width, int height)
+{
+    auto renderer = reinterpret_cast<VulkanRenderer *>(glfwGetWindowUserPointer(window));
+    if (renderer)
+    {
+        framebufferResized = true;                 // Mark that the framebuffer was resized
         renderer->setFramebufferResizedFlag(true); // Inform the Vulkan renderer of the resize
     }
 }
 
 // Function to handle CPU mining
-void startMining() {
+void startMining()
+{
 
     std::cout << "startMining() called";
-    
-    /* try {
+
+    try
+    {
         // Initialize the mining engine
         RandomXMiner miner;
 
-        while (isMining) {
-            miner.mine();  // Perform mining operation
+        while (isMining)
+        {
+            miner.mine(); // Perform mining operation
             // Optionally, you can add a sleep or some condition to limit mining speed
         }
-    } catch (const std::exception& e) {
+    }
+    catch (const std::exception &e)
+    {
         std::cerr << "Mining error: " << e.what() << std::endl;
-    } */
+    }
 }
 
-int main() {
+int main()
+{
 
     std::cout << "Startup\n";
-    
+
     // Initialize GLFW
-    if (!glfwInit()) {
+    if (!glfwInit())
+    {
         return -1;
     }
 
@@ -52,8 +61,9 @@ int main() {
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
     // Create the GLFW window
-    GLFWwindow* window = glfwCreateWindow(800, 600, "Blockchain 3D Visualizer", nullptr, nullptr);
-    if (!window) {
+    GLFWwindow *window = glfwCreateWindow(800, 600, "Blockchain 3D Visualizer", nullptr, nullptr);
+    if (!window)
+    {
         glfwTerminate();
         return -1;
     }
@@ -70,21 +80,26 @@ int main() {
     std::thread miningThread(startMining);
 
     // Main application loop for rendering
-    try {
-        while (renderer.isRunning()) { 
-            glfwPollEvents();  // Poll for events
+    try
+    {
+        while (renderer.isRunning())
+        {
+            glfwPollEvents(); // Poll for events
 
             // Check if the framebuffer has been resized
-            if (framebufferResized) {
+            if (framebufferResized)
+            {
                 framebufferResized = false;
                 renderer.recreateSwapchain(); // Recreate the swapchain on resize
             }
 
-            renderer.render();  // Render the 3D environment
+            renderer.render(); // Render the 3D environment
             // TODO: update the rendering based on mining results here
             //
         }
-    } catch (const std::exception& e) {
+    }
+    catch (const std::exception &e)
+    {
         std::cerr << "Rendering error: " << e.what() << std::endl;
     }
 
@@ -96,7 +111,7 @@ int main() {
     renderer.cleanup();
 
     glfwDestroyWindow(window); // Clean up the window
-    glfwTerminate(); // Clean up GLFW
+    glfwTerminate();           // Clean up GLFW
 
     return 0;
 }
