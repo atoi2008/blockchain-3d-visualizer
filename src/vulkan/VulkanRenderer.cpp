@@ -14,10 +14,10 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
     return VK_FALSE;
 }
 
-VulkanRenderer::VulkanRenderer(GLFWwindow* win) : window(win) {}
+VulkanRenderer::VulkanRenderer(GLFWwindow* win) 
+: window(win), device(VK_NULL_HANDLE), instance(VK_NULL_HANDLE) {}
 
-void VulkanRenderer::init()
-{
+void VulkanRenderer::init() {
     createInstance();
     createSurface();
     pickPhysicalDevice();
@@ -25,8 +25,48 @@ void VulkanRenderer::init()
     createSwapchain();
     createImageViews();
     createCommandBuffer();
+    createMiningUBOBuffer();
+    createSyncObjects();
+}
 
-    // Create semaphores for image availability and rendering completion
+void VulkanRenderer::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory) {
+    // Buffer creation
+    VkBufferCreateInfo bufferInfo{};
+    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bufferInfo.size = size;
+    bufferInfo.usage = usage;
+    bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE; // If the buffer will only be used by one queue family
+
+    if (vkCreateBuffer(device, &bufferInfo, nullptr, &buffer) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create buffer!");
+    }
+
+    // Memory requirements
+    VkMemoryRequirements memRequirements;
+    vkGetBufferMemoryRequirements(device, buffer, &memRequirements);
+
+    // Allocate memory
+    VkMemoryAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.allocationSize = memRequirements.size;
+    allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
+
+    if (vkAllocateMemory(device, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to allocate buffer memory!");
+    }
+
+    // Bind the buffer with the memory
+    vkBindBufferMemory(device, buffer, bufferMemory, 0);
+}
+
+void VulkanRenderer::createMiningUBOBuffer() {
+    miningUBOBuffer = new VulkanBuffer(device, physicalDevice, sizeof(MiningUBO), 
+                                       VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
+                                       VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+}
+
+void VulkanRenderer::createSyncObjects() {
+    // Semaphore creation code
     VkSemaphoreCreateInfo semaphoreInfo{};
     semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
@@ -36,20 +76,20 @@ void VulkanRenderer::init()
         throw std::runtime_error("Failed to create semaphores!");
     }
 
-    // Create fences for synchronizing frame rendering
+    // Fence creation code
     VkFenceCreateInfo fenceInfo{};
     fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
     inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-    {
-        if (vkCreateFence(device, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS)
-        {
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        if (vkCreateFence(device, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) {
             throw std::runtime_error("Failed to create fence!");
         }
     }
 }
+
+    
 
 VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
     auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
@@ -121,6 +161,45 @@ void VulkanRenderer::presentImage(uint32_t imageIndex) {
     }
 }
 
+/**
+ * @brief Updates the mining-related data and visualizes it using Vulkan rendering.
+ * 
+ * This function workflow is responsible for updating the mining-related data and then rendering
+ * the frame based on that data. It consists of three main stages:
+ * 
+ * 1. **update()**: Updates the Uniform Buffer Object (UBO) with the current mining data.
+ *    - Takes a `BlockHeader` as input and extracts relevant mining information (like nonce, hash).
+ *    - Maps this data into the UBO (uniform buffer) that will be used by the shaders.
+ * 
+ * 2. **updateUniformBuffer()**: Transfers updated data from the CPU to the GPU's memory.
+ *    - Maps the memory of the uniform buffer, copies the UBO data, and unmaps it.
+ *    - This ensures that the GPU has the latest mining data for rendering.
+ * 
+ * 3. **drawFrame()**: Manages synchronization, acquires the next image, submits drawing commands, and presents the image.
+ *    - Waits for the GPU to finish rendering the previous frame.
+ *    - Acquires the next image from the swapchain.
+ *    - Submits the command buffer (including rendering commands) and presents the rendered image.
+ *    - Handles synchronization between frames and manages GPU resources.
+ * 
+ * This structure allows for real-time visualization of the mining data using the Vulkan API, where mining progress or block data can be updated on the fly.
+ */
+
+void VulkanRenderer::update(const BlockHeader& blockHeader) {
+    // Map block header data to the miningUBO (modify this as per your data needs)
+    miningUBO.data[0] = static_cast<float>(blockHeader.nonce);  // Example
+    miningUBO.data[1] = static_cast<float>(blockHeader.hash[0]); // Example for hash data
+    
+    // Update the uniform buffer on the GPU
+    updateUniformBuffer();
+}
+
+void VulkanRenderer::updateUniformBuffer() {
+    void* data;
+    vkMapMemory(device, miningUBOBufferMemory, 0, sizeof(MiningUBO), 0, &data);
+    memcpy(data, &miningUBO, sizeof(MiningUBO));
+    vkUnmapMemory(device, miningUBOBufferMemory);
+}
+
 void VulkanRenderer::drawFrame() {
     // Wait for the previous frame to finish
     vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
@@ -152,6 +231,19 @@ bool VulkanRenderer::isRunning() {
 
 void VulkanRenderer::recreateSwapchain() {
     vkDeviceWaitIdle(device);
+
+    // Wait for device to be idle before recreating swapchain
+    vkDeviceWaitIdle(device);
+
+    // Get new window size
+    int width, height;
+    glfwGetFramebufferSize(window, &width, &height);
+    windowExtent.width = static_cast<uint32_t>(width);
+    windowExtent.height = static_cast<uint32_t>(height);
+
+    // Now recreate the swapchain with the updated windowExtent
+    swapchain->recreate(windowExtent);
+
     cleanupSwapchain();
     createSwapchain();
     createImageViews();
@@ -339,31 +431,6 @@ void VulkanRenderer::createLogicalDevice() {
     }
 }
 // swapchain helper functions
-// Function to query swap chain support details for a physical device
-SwapChainSupportDetails VulkanRenderer::querySwapChainSupport(VkPhysicalDevice device)
-{
-    SwapChainSupportDetails details;
-
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
-
-    uint32_t formatCount;
-    vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
-    if (formatCount != 0)
-    {
-        details.formats.resize(formatCount);
-        vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, details.formats.data());
-    }
-
-    uint32_t presentModeCount;
-    vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr);
-    if (presentModeCount != 0)
-    {
-        details.presentModes.resize(presentModeCount);
-        vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, details.presentModes.data());
-    }
-
-    return details;
-}
 
 // Function to choose the best surface format
 VkSurfaceFormatKHR VulkanRenderer::chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats)
@@ -414,44 +481,10 @@ VkExtent2D VulkanRenderer::chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capa
 }
 
 void VulkanRenderer::createSwapchain() {
-    SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice);
+     // Create the swapchain using VulkanSwapchain
+    swapchain = new VulkanSwapchain(device, physicalDevice, surface, windowExtent);
+    swapchain->create();  // Call the encapsulated create method
 
-    VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
-    VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
-    VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities);
-
-    // Create the swapchain using the chosen parameters
-    VkSwapchainCreateInfoKHR createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    createInfo.surface = surface;
-    createInfo.minImageCount = swapChainSupport.capabilities.minImageCount + 1; // Double buffering
-    createInfo.imageFormat = surfaceFormat.format;
-    createInfo.imageColorSpace = surfaceFormat.colorSpace;
-    createInfo.imageExtent = extent;
-    createInfo.imageArrayLayers = 1;
-    createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE; // No sharing between queues
-    createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
-    createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-    createInfo.presentMode = presentMode;
-    createInfo.clipped = VK_TRUE;
-    createInfo.oldSwapchain = VK_NULL_HANDLE; // This is for recreating
-
-    // Create the swapchain
-    if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapchain) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create swapchain!");
-    }
-
-    // Retrieve the swapchain images
-    uint32_t imageCount;  // Declare the variable to hold the number of images
-    vkGetSwapchainImagesKHR(device, swapchain, &imageCount, nullptr); // Get the image count first
-
-    swapchainImages.resize(imageCount); // Resize the vector to hold the images
-    vkGetSwapchainImagesKHR(device, swapchain, &imageCount, swapchainImages.data()); // Now get the images
-
-    // Save the swapchain image format and extent for later use
-    swapchainImageFormat = surfaceFormat.format;
-    swapchainExtent = extent;
 }
 
 
@@ -482,14 +515,10 @@ void VulkanRenderer::createImageViews() {
 }
 
 void VulkanRenderer::cleanupSwapchain() {
-    for (VkImageView imageView : swapchainImageViews) {
-        vkDestroyImageView(device, imageView, nullptr);
-    }
-    swapchainImageViews.clear();
-
-    if (swapchain != VK_NULL_HANDLE) {
-        vkDestroySwapchainKHR(device, swapchain, nullptr);
-        swapchain = VK_NULL_HANDLE; // Set to null after destruction
+    if (swapchain) {
+        swapchain->cleanup();  // Call VulkanSwapchain's cleanup method
+        delete swapchain;      // Clean up the swapchain object itself
+        swapchain = nullptr;   // Set to nullptr after deletion
     }
 }
 
@@ -556,6 +585,10 @@ void VulkanRenderer::render() {
     // Acquire the next image from the swapchain
     vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &currentImage);
 
+    // Update mining stats and the uniform buffer
+    updateMiningStats();        // Update mining data with new values
+    updateUniformBuffer();      // Copy updated mining data to the uniform buffer
+
     // Ensure the command buffer is recorded
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -583,19 +616,28 @@ void VulkanRenderer::render() {
     // Begin the render pass
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-    // Rendering commands go here...
+    // ** Bind the UBO that contains mining data **
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout,
+                            0, 1, &descriptorSet, 0, nullptr); // Bind the descriptor set for UBO
 
+    // Bind the graphics pipeline
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+
+    // Issue drawing commands (procedural visualizations based on mining data)
+    vkCmdDraw(commandBuffer, /*vertex count*/, /*instance count*/, /*first vertex*/, /*first instance*/);
+
+    // End the render pass
     vkCmdEndRenderPass(commandBuffer);
+
+    // End recording the command buffer
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
         throw std::runtime_error("Failed to end command buffer!");
     }
 
-    //TODO: update mining stats or visuals before rendering
-    //updateMiningStats();
-    
+    // Submit and present the frame
     drawFrame();
-
 }
+
 
 
 

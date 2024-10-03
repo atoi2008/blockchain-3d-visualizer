@@ -6,8 +6,6 @@
 #include "vulkan/VulkanRenderer.h"
 #include "mining/RandomXMiner.h"
 
-// Global atomic variable to control mining
-std::atomic<bool> isMining{true};
 
 // Flag to check if the window was resized
 bool framebufferResized = false;
@@ -23,26 +21,27 @@ void framebufferResizeCallback(GLFWwindow *window, int width, int height)
     }
 }
 
-// Function to handle CPU mining
-void startMining()
+// Shared variables for mining and rendering
+std::mutex dataMutex;
+BlockHeader blockHeader;  // The block data that will be mined and visualized
+bool miningActive = true; // Flag to control the mining thread
+
+void miningThreadFunction()
 {
+    RandomXMiner miner;
 
-    std::cout << "startMining() called";
+    // Prepare initial data for mining
+    blockHeader = miner.prepareInputData();
 
-    try
+    while (miningActive)
     {
-        // Initialize the mining engine
-        RandomXMiner miner;
-
-        while (isMining)
         {
-            miner.mine(); // Perform mining operation
-            // Optionally, you can add a sleep or some condition to limit mining speed
+            std::lock_guard<std::mutex> lock(dataMutex);
+            // Mine and update the blockHeader
+            miner.mine(blockHeader);
+            // You can perform other logic here, like checking for success or progress updates
         }
-    }
-    catch (const std::exception &e)
-    {
-        std::cerr << "Mining error: " << e.what() << std::endl;
+        std::this_thread::sleep_for(std::chrono::milliseconds(50)); // Sleep to avoid overloading the CPU
     }
 }
 
@@ -77,7 +76,7 @@ int main()
     glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
 
     // Start the mining thread
-    std::thread miningThread(startMining);
+    std::thread miningThread(miningThreadFunction);
 
     // Main application loop for rendering
     try
@@ -92,10 +91,16 @@ int main()
                 framebufferResized = false;
                 renderer.recreateSwapchain(); // Recreate the swapchain on resize
             }
+            // TODO: update the rendering based on mining results here
+            {
+                std::lock_guard<std::mutex> lock(dataMutex);
+                // Update the renderer with the latest blockHeader data from the miner
+                renderer.update(blockHeader);
+            }
 
             renderer.render(); // Render the 3D environment
-            // TODO: update the rendering based on mining results here
-            //
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(16)); // Simulate ~60 FPS
         }
     }
     catch (const std::exception &e)
@@ -103,15 +108,13 @@ int main()
         std::cerr << "Rendering error: " << e.what() << std::endl;
     }
 
-    // Stop mining and join the thread before exiting
-    isMining = false;
-    miningThread.join();
-
-    // Clean up Vulkan resources
+ 
+    // Cleanup
+    miningActive = false;
+    miningThread.join(); // Ensure the mining thread completes
     renderer.cleanup();
-
-    glfwDestroyWindow(window); // Clean up the window
-    glfwTerminate();           // Clean up GLFW
+    glfwDestroyWindow(window);
+    glfwTerminate();
 
     return 0;
 }
